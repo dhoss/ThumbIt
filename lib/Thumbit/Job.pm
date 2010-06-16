@@ -3,7 +3,6 @@ use MooseX::Declare;
 use POE;
 use Imager;
 use File::Find::Rule;
-use namespace::autoclean;
 
 class Thumbit::Job with 'POEx::WorkerPool::Role::Job', 'MooseX::SimpleConfig' {
 
