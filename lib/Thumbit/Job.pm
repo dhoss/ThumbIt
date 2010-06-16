@@ -4,7 +4,9 @@ use POE;
 use Imager;
 use File::Find::Rule;
 
-class Thumbit::Job with 'POEx::WorkerPool::Role::Job', 'MooseX::SimpleConfig' {
+class Thumbit::Job with POEx::WorkerPool::Role::Job {
+    
+    with 'MooseX::SimpleConfig';
 
     has 'imager' => (
         is         => 'ro',

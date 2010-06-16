@@ -1,0 +1,12 @@
+package  Thumbit::Job::Parallel;
+
+  with 'POEx::Role::SessionInstantiation';
+          use aliased 'POEx::Role::Event';
+                  
+                          use POEx::WorkerPool::Types(':all');
+                                  use POEx::WorkerPool::WorkerEvents(':all');
+
+                                          use POEx::WorkerPool;
+
+                                                  has pool => ( is => 'ro', isa => DoesWorkerPool, lazy_build => 1 );
+                                                          sub _build_pool { POEx::WorkerPool->new() }
