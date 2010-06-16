@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-use Thumbit;
+use Thumbit::Job::Parallel;
 
-my $app = Thumbit->new_with_config(configfile => 'thumbit.conf');
+my $app = Thumbit::Job::Parallel->new_with_config(configfile => 'thumbit.conf');
 POE::Kernel->run();
