@@ -12,3 +12,34 @@ Thumbit - A Beautiful Marriage of Catalyst and POE
    Because it's fun!  Also, decoupling of logic and processes.
  - ### How?
    Let's see!
+
+Packing List
+==============
+
+Before we get going, you may or may not want to check out the code from github.
+
+To do so:
+
+> git clone git://github.com/dhoss/ThumbIt.git
+
+> cd ThumbIt
+
+> perl Makefile.PL
+
+> make
+
+> make test
+
+> make install
+
+This will get you all the modules you need to run this code.  This is optional obviously, but you can follow along
+as you please.
+
+Scenario
+========
+
+We have a website that takes image uploads of up to 4MB in size, any dimensions, and creates thumbnails for said images.
+
+Simple enough, yes?
+
+
