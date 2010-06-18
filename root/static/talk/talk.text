@@ -42,4 +42,135 @@ We have a website that takes image uploads of up to 4MB in size, any dimensions,
 
 Simple enough, yes?
 
+If only...
+==========
 
+Sure, if it's a small enough image.
+
+What if it's 4MB in size though?
+
+Issues
+======
+
+We run into:
+
+ - slow processing times (have to wait until the application finishes processing the thumbnail *per request*, ouch)
+ - can't move on to other tasks until request is done (see above)
+ - huge hit on web app performance (even 25 or so people hitting the app at the same time to upload and thumbnail an image becomes a pain) 
+
+Solution?
+========
+
+Delegate the thumbnail processing to POE workers using POEx::WorkerPool ([http://search.cpan.org/dist/POEx-WorkerPool/](http://search.cpan.org/dist/POEx-WorkerPool/))
+
+POEx::WorkerPool (from here on out, we'll refer to it as PWP) allows you to set up a few things to make your job processing easier.  I'm not going to go in depth here, nperez has a fine [talk](http://github.com/nperez/opw2010) on that.
+
+In short: 
+
+ - define a job to be done.
+ - define a class to be run in parallel
+ - instantiate your job class
+ - run application
+ - ???
+ - profit!
+
+Okay, but where does Catalyst come in?
+======================================
+
+We need an upload interface. Yes? Yes.  That's where Catalyst comes in.
+
+Catalyst also writes out the initial image file to a directory that our POE workers will crawl through and create thumbnails out of.  
+
+Okay, how do these two interact then?
+====================================
+
+There are a few trains of thought here.
+
+ - IPC
+    Have Catalyst (through a model) talk to the POE app directly.
+    This is okay, but can be cumbersome.
+
+ - Our queue idea
+   Queues are pretty awesome.  Whether maintained by an RDBMS, a flatfile, a simple directory, or an entire daemon, they seem to be a pretty rock solid method for dealing with multi-worker jobs.
+
+The rundown
+===========
+
+Workflow:
+<pre>
+ user uploads image 
+       |
+       |
+       v
+ Catalyst does quick check to make sure it's <=4MB
+       |
+       |                                            
+       v                                            
+       <=4MB?                                       |----> return to upload page with error, etc.
+      /    \                                        |
+    yes     no --------------------------------------
+     |
+     v 
+ Catalyst writes said image out to queue directory 
+       |
+       |
+       v
+ Catalyst adds this job to the worker queue (simple database in our case)
+       |
+       |---------------> Ajax begins poll of job progress --- <-------------------- report back
+       |                                                      |                       |
+       v                                                      |                       |
+  POEx::WorkerPool picks up job                               |                       |
+       |                                                      |                       |
+       |                                                      |                       |
+       v                                                      |                       |
+  POEx::WorkerPool starts up jobs (4 in this case)         <--- Done? [ ] y  [x] n ---
+       |                                                      |                       ^
+       |                                                      |                       |
+       v                                                      |                       |
+  Workers churn out thumb nails   <---------------------------- Done? [ ] y  [x] n---- 
+       |                                                                              ^
+       |                                                                              |
+       v                                                                              |
+  Workers finish, update queue    <---------------------------- Done? [x] y [ ] n ---- 
+|                                                                                          |
+|------------------------------------------------------------------------------------------|                  
+                  THIS ENTIRE TIME CATALYST CAN BE PROCESSING OTHER REQUESTS
+   ( you can even do something like set a default picture until the thumbnail is processed
+                    if you anticipate that kind of wait time )
+</pre>
+
+
+Wait.  What just happened?
+==========================
+
+Essentially, Catalyst takes care of handing of the image to POE, and goes off and does some stuff.  A little bit of Ajax, and we have a longpoll bit that can update the status on the processing progress of this or these thumbnails.  
+In some scenarios, you may just want to let the app go on with its merry business and not worry about the Ajax updating.  The point is, Catalyst is freed up to do whatever while POE works away.
+
+Cool!  But why can't I just use a cronjob for this?
+===================================================
+
+There are a multitude of reasons a cron job may not work in this instance.
+
+ - The job takes too long, and runs over into the next schedule instantiation of the cronjob.
+ - Too much work to start up and kill a process, creating unnecessary load.
+ - Too difficult to manage worker processes from an instance script (see previous point)
+ - Much harder to track progress in a cron job.  
+   POEx::WorkerPool allows you to check up on it much easier than an instance script in a cronjob might.
+
+Well wait! What about $x? It does $y!
+====================================
+
+Yes, there ARE other options out there.  Here are a few examples!
+
+ - Gearman - distributed/remote processing and function dispatching.
+ - TheSchwartz - a reliable job queue
+ - Coro - "the only real threads in perl"
+
+While each of these have their own purpose, I feel they aren't suitable in this situation because:
+
+ - We don't necessarily need to scale OUT with machines in our case.  We want a local, easy to use, worker pool.  We don't need a farm of workers on a massive scale (at this point).
+ - We don't need a very robust queue system right now, and if we did, we'd probably go with beanstalk because it's pretty easy in terms of scaling up and out.
+ - POE is a long standing, well supported, tested, and extremely functional object environment.  It scales to the moon and back, and is actively and freely developed upon by many many very good perl programmers.  Not to say Coro or AnyEvent are any less good, but in this case, my preference lands with POE for functionality over speed.
+
+ALSO, in theory, you could write a driver for Gearman using POEx::WorkerPool and have it scale out to remote machines *that* way.  So, in essence, gearman isn't ruled out here, but it is in a different category of use than we are currently looking at.
