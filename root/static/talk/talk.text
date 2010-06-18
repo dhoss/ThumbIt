@@ -1,0 +1,14 @@
+title: Thumbit - A Beautiful Marriage of Catalyst and POE
+
+Thumbit - A Beautiful Marriage of Catalyst and POE
+=========================================================
+
+ - ### What?
+   A simple method to delegate your long running processes away from your web applications for great justice.
+ - ### Who?
+   Web app developers who are tired of waiting for Catalyst to finish processessing a request before moving on.
+
+ - ### Why?
+   Because it's fun!  Also, decoupling of logic and processes.
+ - ### How?
+   Let's see!
