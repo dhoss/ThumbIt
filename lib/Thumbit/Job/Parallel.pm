@@ -10,7 +10,7 @@ class  Thumbit::Job::Parallel {
     use POEx::WorkerPool::WorkerEvents(':all');
 
     use POEx::WorkerPool;
-    has config => ( is => 'ro', required => 1, lazy => 1, default => sub { croak "Config file required" } );
+    has config => ( is => 'ro', required => 1, lazy => 1, default => sub { die "Config file required" } );
     has pool => ( is => 'ro', isa => DoesWorkerPool, lazy_build => 1 );
     method  _build_pool { POEx::WorkerPool->new() }
 
