@@ -6,6 +6,7 @@ class  Thumbit::Job::Parallel {
     with 'POEx::Role::SessionInstantiation';
     use aliased 'POEx::Role::Event';
 
+    use POEx::Types(':all');
     use POEx::WorkerPool::Types(':all');
     use POEx::WorkerPool::WorkerEvents(':all');
 
