@@ -46,11 +46,16 @@ class  Thumbit::Job::Parallel {
         my @files;
         my $dir = $self->dir;
         my $handle = $dir->open;
+        my $type;
         warn "Finding files\n";        
         while ( my $file = $handle->read ) {
-            warn "Pushing file $file\n";
-            warn "$file is mime type " . (by_suffix(basename($file)))[0] . "\n";
-            push @files, $dir->file($file);
+            warn "dealing with file $file\n";
+            $type = (by_suffix(basename($file)))[0];
+            warn "$file is mime type $type\n";
+            if ( $type =~ /^image.+$/ ) {
+                warn "pushing file $file\n";
+                push @files, $dir->file($file);
+            }
         }
 
         return \@files;
