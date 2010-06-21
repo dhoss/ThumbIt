@@ -12,10 +12,15 @@ class  Thumbit::Job::Parallel {
     
     use POEx::WorkerPool;
     use Path::Class qw/dir/;
+    use MIME::Types qw/by_suffix/;
+    use File::Basename;
 
     has config => ( is => 'ro', required => 1, lazy => 1, default => sub { die "Config file required" } );
     has pool => ( is => 'ro', isa => DoesWorkerPool, lazy_build => 1 );
-    method  _build_pool { POEx::WorkerPool->new() }
+    has dir => ( is => 'ro', required => 1, lazy_build => 1 );
+    
+    method _build_dir { dir('root', 'queue') }
+    method _build_pool { POEx::WorkerPool->new() }
 
     after _start is Event {
         for (0..4) {
@@ -32,16 +37,19 @@ class  Thumbit::Job::Parallel {
 
     method poll_queue is Event {
        # poll queue for new jobs
+       warn "Polling queue\n";
        my $queue = $self->get_queue;
        return $queue; 
     }
 
     method get_queue {
         my @files;
-        my $dir = dir('root', 'queue');
+        my $dir = $self->dir;
         my $handle = $dir->open;
-        
+        warn "Finding files\n";        
         while ( my $file = $handle->read ) {
+            warn "Pushing file $file\n";
+            warn "$file is mime type " . (by_suffix(basename($file)))[0] . "\n";
             push @files, $dir->file($file);
         }
 
