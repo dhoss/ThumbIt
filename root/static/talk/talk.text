@@ -78,10 +78,12 @@ Okay, how do these two interact then?
 There are a few trains of thought here.
 
  - IPC
+
     Have Catalyst (through a model) talk to the POE app directly.
     This is okay, but can be cumbersome, and honestly, POE *inside* Catalyst is a little scary.
 
  - Our queue idea
+
    Queues are pretty awesome.  Whether maintained by an RDBMS, a flatfile, a simple directory, or an entire daemon, they seem to be a pretty rock solid method for dealing with multi-worker jobs.
    We're going to go ahead and use a simple queue directory in the app hierarchy.  Anything in here will get processed into a thumbnail (enqueued), and once that done, that thumbnail will be written to the thumbnail directory and the image copied to the image directory and deleted from the queue directory.   
 
@@ -162,7 +164,14 @@ Yes, there ARE other options out there.  Here are a few examples!
 While each of these have their own purpose, I feel they aren't suitable in this situation because:
 
  - We don't necessarily need to scale OUT with machines in our case.  We want a local, easy to use, worker pool.  We don't need a farm of workers on a massive scale (at this point).
- - We don't need a very robust queue system right now, and if we did, we'd probably go with beanstalk because it's pretty easy in terms of scaling up and out.
+ - We don't need a very robust queue system right now, and if we did, we'd probably go with [beanstalk](http://kr.github.com/beanstalkd/) because it's pretty easy in terms of scaling up and out.
  - POE is a long standing, well supported, tested, and extremely functional object environment.  It scales to the moon and back, and is actively and freely developed upon by many many very good perl programmers.  Not to say Coro or AnyEvent are any less good, but in this case, my preference lands with POE for functionality over speed.
+
+So, -you- say this is good. But does anyone actually *do* this?
+===============================================================
+
+Sites like github, Flickr, Canonical Cloud, Twitter, and [many more](http://highscalability.com/display/Search?searchQuery=job+queue&moduleId=4876569)
+
+Job queues and worker processes are a Good Thing.  Long running processes should be dealt without side of the web app.  It helps you have a single point of failure for each bit of logic.  It also allows you to farm out processes from other applications without having to load up your web application unnecesarily.  
 
 
