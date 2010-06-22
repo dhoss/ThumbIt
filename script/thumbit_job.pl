@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
-use Thumbit::Job::Parallel;
+use Thumbit::NeedsParallel;
 use FindBin qw/$Bin/;
 
-my $app = Thumbit::Job::Parallel->new(config => $Bin. '/../thumbit.conf');
+my $app = Thumbit::NeedsParallel->new(config => $Bin. '/../thumbit.conf');
 POE::Kernel->run();

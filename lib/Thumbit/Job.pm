@@ -69,11 +69,11 @@ class Thumbit::Job with POEx::WorkerPool::Role::Job {
          for my $img_fh ( @{$fh} ) {
              if ( $image->read( fh => $img_fh ) ) {
                  $scaled = $image->scale( scalefactor => $self->scalefactor );
-
+                 
                  ## write our image to disk
                  binmode STDOUT;
                  $| = 1;
-
+                 warn "Writing thumb out\n";
                  $scaled->write( file => $self->writedir )
                    or die $image->errstr;
              }

@@ -13,7 +13,7 @@ Thumbit - A Beautiful Marriage of Catalyst and POE
  - ### How?
    Let's see!
 
-Packing List
+Follow Along?
 ==============
 
 Before we get going, you may or may not want to check out the code from github.
@@ -22,18 +22,9 @@ To do so:
 
 > git clone git://github.com/dhoss/ThumbIt.git
 
-> cd ThumbIt
+This code isn't 100% finished, but you are more than welcome to look at it to get an idea of where things go.
 
-> perl Makefile.PL
 
-> make
-
-> make test
-
-> make install
-
-This will get you all the modules you need to run this code.  This is optional obviously, but you can follow along
-as you please.
 
 Scenario
 ========
@@ -88,10 +79,11 @@ There are a few trains of thought here.
 
  - IPC
     Have Catalyst (through a model) talk to the POE app directly.
-    This is okay, but can be cumbersome.
+    This is okay, but can be cumbersome, and honestly, POE *inside* Catalyst is a little scary.
 
  - Our queue idea
    Queues are pretty awesome.  Whether maintained by an RDBMS, a flatfile, a simple directory, or an entire daemon, they seem to be a pretty rock solid method for dealing with multi-worker jobs.
+   We're going to go ahead and use a simple queue directory in the app hierarchy.  Anything in here will get processed into a thumbnail (enqueued), and once that done, that thumbnail will be written to the thumbnail directory and the image copied to the image directory and deleted from the queue directory.   
 
 The rundown
 ===========
@@ -173,4 +165,4 @@ While each of these have their own purpose, I feel they aren't suitable in this 
  - We don't need a very robust queue system right now, and if we did, we'd probably go with beanstalk because it's pretty easy in terms of scaling up and out.
  - POE is a long standing, well supported, tested, and extremely functional object environment.  It scales to the moon and back, and is actively and freely developed upon by many many very good perl programmers.  Not to say Coro or AnyEvent are any less good, but in this case, my preference lands with POE for functionality over speed.
 
-ALSO, in theory, you could write a driver for Gearman using POEx::WorkerPool and have it scale out to remote machines *that* way.  So, in essence, gearman isn't ruled out here, but it is in a different category of use than we are currently looking at.
+
