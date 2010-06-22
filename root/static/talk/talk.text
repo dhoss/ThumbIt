@@ -24,7 +24,10 @@ To do so:
 
 This code isn't 100% finished, but you are more than welcome to look at it to get an idea of where things go.
 
+HI SHAWN
+========
 
+Hi.  And thanks for the VGA adaptor.
 
 Scenario
 ========
@@ -54,7 +57,7 @@ Solution?
 
 Delegate the thumbnail processing to POE workers using POEx::WorkerPool ([http://search.cpan.org/dist/POEx-WorkerPool/](http://search.cpan.org/dist/POEx-WorkerPool/))
 
-POEx::WorkerPool (from here on out, we'll refer to it as PWP) allows you to set up a few things to make your job processing easier.  I'm not going to go in depth here, nperez has a fine [talk](http://github.com/nperez/opw2010) on that.
+POEx::WorkerPool  allows you to set up a few things to make your job processing easier.  I'm not going to go in depth here, nperez has a fine [talk](http://github.com/nperez/opw2010) on that.
 
 In short: 
 
@@ -148,9 +151,9 @@ There are a multitude of reasons a cron job may not work in this instance.
 
  - The job takes too long, and runs over into the next schedule instantiation of the cronjob.
  - Too much work to start up and kill a process, creating unnecessary load.
- - Too difficult to manage worker processes from an instance script (see previous point)
  - Much harder to track progress in a cron job.  
    POEx::WorkerPool allows you to check up on it much easier than an instance script in a cronjob might.
+   (here, we can just do $self->pool()->halt();)
 
 Well wait! What about $x? It does $y!
 ====================================
@@ -174,4 +177,19 @@ Sites like github, Flickr, Canonical Cloud, Twitter, and [many more](http://high
 
 Job queues and worker processes are a Good Thing.  Long running processes should be dealt without side of the web app.  It helps you have a single point of failure for each bit of logic.  It also allows you to farm out processes from other applications without having to load up your web application unnecesarily.  
 
+Where else is this used?
+========================
 
+Common cases for this include sending email newsletters out, log parsing, creating git repositories, etc.
+
+Thoughts?
+=========
+
+As said before, this is a cool idea.  Sure, there are drawbacks (do I *need* distributed processes? Do I need a cluster and remote jobs?), but this is a quick and really clean method to get more "hands" on your jobs to get stuff done faster.
+
+
+That's all folks! 
+=================
+
+
+Questions?
