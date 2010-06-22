@@ -18,14 +18,23 @@ class  Thumbit::NeedsParallel {
     has config => ( is => 'ro', required => 1, lazy => 1, default => sub { die "Config file required" } );
     has pool => ( is => 'ro', isa => DoesWorkerPool, lazy_build => 1 );
     has dir => ( is => 'ro', required => 1, lazy_build => 1 );
-    
-    method _build_dir { dir('root', 'queue') }
-    method _build_pool { POEx::WorkerPool->new() }
+    has thumber => ( is => 'ro', required => 1, lazy_build => 1 );
+
+    method _build_thumber { 
+        return Thumbit::Job->new_with_config(
+            configfile  => $self->config,
+            image_queue => $self->poll_queue,
+        ); 
+    }
+    method _build_dir { dir('root', 'queue') } # NEEDS CONFIGURABILITY
+    method _build_pool { POEx::WorkerPool->new }
 
     after _start is Event {
         for (0..4) {
-            my $alias = $self->pool->enqueue_job(Thumbit::Job->new_with_config( configfile => $self->config ));
-            $self->poe->kernel->delay_set('poll_queue', 5);
+            my $alias = $self->pool->enqueue_job(
+                $self->thumber,
+            );
+            $self->poe->kernel->delay_set('poll_and_create', 5);
 
             $self->post(
                 $alias, 'subscribe',
@@ -41,7 +50,7 @@ class  Thumbit::NeedsParallel {
     ## 3. write thumbnails out to thumbnail dir
     ## 4. remove processed images from queue directory
 
-    method poll_queue is Event {
+    method poll_queue {
         my @files;
         my $dir = $self->dir;
         my $handle = $dir->open;
@@ -59,6 +68,14 @@ class  Thumbit::NeedsParallel {
 
         return \@files;
     }
+
+    method poll_and_create is Event {
+        my $files = $self->poll_queue;
+        my $thumb = $self->thumber;
+        warn "making thumbs\n";        
+        $thumb->make_thumb(@{$self->files});
+    }
+
 
     method job_complete (SessionID :$worker_id, Str :$job_id, Ref :$msg) is Event {
     

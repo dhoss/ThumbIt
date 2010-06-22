@@ -1,5 +1,6 @@
 
 use MooseX::Declare;
+use MooseX::Method::Signatures;
 use POE;
 use Imager;
 use File::Find::Rule;
@@ -26,27 +27,18 @@ class Thumbit::Job with POEx::WorkerPool::Role::Job {
         required => 1,
     );
 
-     has 'thumb_queue_dir' => (
-        is       => 'ro',
-        required => 1,
-     );
-
      has 'image_queue' => (
         is         => 'ro',
         required   => 1,
-        lazy_build => 1,
+        lazy       => 1,
+        default    => sub { die "image queue required" }
      );
-
-     method _build_image_queue {
-         my $dir = $self->thumb_queue_dir;
-         my @files =
-           File::Find::Rule->file()->name(qr/\.(png|jpg|tiff|gif)$/)
-           ->in( $self->thumb_queue_dir );
-         return @files;
-     }
+   
+    
 
      method init_job {
          my @queue = $self->image_queue;
+         warn "enqueueing step\n";
 
          $self->enqueue_step(
              [
@@ -58,13 +50,12 @@ class Thumbit::Job with POEx::WorkerPool::Role::Job {
          );
      }
 
-     method make_thumbs {
-         my $fh = shift;
+     method make_thumbs (ArrayRef $fh) {
 
          my $image = $self->imager;
 
          my $scaled;
-        
+         warn "writing images\n";
          ## attempt to read in the image
          for my $img_fh ( @{$fh} ) {
              if ( $image->read( fh => $img_fh ) ) {
