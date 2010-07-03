@@ -3,8 +3,10 @@ use MooseX::Declare;
 use MooseX::Method::Signatures;
 use POE;
 use Imager;
-use File::Find::Rule;
+use File::Basename;
 use Thumbit::Schema;
+use DateTime;
+use DateTime::Format::MySQL;
 
 class Thumbit::Job with POEx::WorkerPool::Role::Job {
     
@@ -55,30 +57,32 @@ class Thumbit::Job with POEx::WorkerPool::Role::Job {
     }
 
      method init_job {
-         use Data::Dumper;
-         my @queue = $self->image_queue;
          warn "enqueueing step\n";
-         warn "queue: " . Dumper @queue;
          $self->enqueue_step(
              [
                  sub {
                      $self->make_thumbs;
                  },
+                 []
              ]
          );
      }
 
+     method poll_queue {
+         my $schema = $self->schema;
+         return $schema->resultset('Queue')->all;
+     }
+
      method make_thumbs  {
-         use Data::Dumper;
          my $image = $self->imager;
          my $schema = $self->schema;
-         my @image_paths = $schema->resultset('Queue')->all;
+         my @image_paths = $self->poll_queue;
          my $scaled;
          warn "writing images\n";
          ## attempt to read in the image
-         for my $img_path ( @image_paths ) {
-             warn "Image path: $img_path";
-             if ( $image->read( file => $img_path ) ) {
+         for my $img ( @image_paths ) {
+             warn "Image path: " . $img->image_path;
+             if ( $image->read( file => $img->image_path ) ) {
                  $scaled = $image->scale( scalefactor => $self->scalefactor );
                  
                  ## write our image to disk
@@ -86,9 +90,14 @@ class Thumbit::Job with POEx::WorkerPool::Role::Job {
                  $| = 1;
                  warn "Writing thumb out\n";
                  warn "Write dir: " . $self->writedir;
-                 $scaled->write( file => $img_path )
+                 $scaled->write( file => $self->writedir . (fileparse($img->image_path))[0] )
                    or die $scaled->errstr;
                  warn "Wrote ". $scaled;
+                    
+                 ## update queue
+                 my $dt = DateTime->now;
+                 DateTime::Format::MySQL->format_datetime($dt);
+                 $img->update({ status => 'done', finished => $dt });
              }
           }
 
