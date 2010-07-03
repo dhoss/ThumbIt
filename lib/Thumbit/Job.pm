@@ -63,13 +63,14 @@ class Thumbit::Job with POEx::WorkerPool::Role::Job {
                  sub {
                      $self->make_thumbs;
                  },
-                 []
+                
              ]
          );
      }
 
      method poll_queue {
          my $schema = $self->schema;
+         warn "polling queue";
          return $schema->resultset('Queue')->all;
      }
 
@@ -81,7 +82,7 @@ class Thumbit::Job with POEx::WorkerPool::Role::Job {
          warn "writing images\n";
          ## attempt to read in the image
          for my $img ( @image_paths ) {
-             warn "Image path: " . $img->image_path;
+             print "Image path: " . $img->image_path;
              if ( $image->read( file => $img->image_path ) ) {
                  $scaled = $image->scale( scalefactor => $self->scalefactor );
                  

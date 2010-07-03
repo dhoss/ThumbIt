@@ -1,6 +1,6 @@
 use MooseX::Declare;
 use Thumbit::Job;
-
+use Try::Tiny;
 class  Thumbit::NeedsParallel {
 
     with 'POEx::Role::SessionInstantiation';
@@ -20,25 +20,28 @@ class  Thumbit::NeedsParallel {
 
     after _start is Event {
         for (0..4) {
-            my $alias = $self->run_job; 
+            warn "Spooling up";
+            my $alias => $self->run_job;
+            warn "after alias";
+            $self->poe->kernel->delay_set(
+               'run_job',
+               5
+            );
+            warn "after delay_set";
             $self->post(
                 $alias, 'subscribe',
                 event_name => +PXWP_JOB_COMPLETE,
                 event_handler => 'job_complete',
             );
         }
+        warn "after post";
     }
 
-    method run_job {
+    method run_job is Event {
+        my $alias;
         my $job = Thumbit::Job->new_with_config(configfile => $self->config);
-        my $alias => $self->pool->enqueue_job($job);
-        $self->info('Job enqueued');
-        
-        $self->poe->kernel->delay_set(
-            'run_job',
-            5,
-        );
-        
+        $alias = $self->pool->enqueue_job($job) or die "Can't enqueue job";;
+        print "Job enqueued\n";
         return $alias;
     }
 
