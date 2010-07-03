@@ -4,6 +4,7 @@ use MooseX::Method::Signatures;
 use POE;
 use Imager;
 use File::Find::Rule;
+use Thumbit::Schema;
 
 class Thumbit::Job with POEx::WorkerPool::Role::Job {
     
@@ -27,46 +28,67 @@ class Thumbit::Job with POEx::WorkerPool::Role::Job {
         required => 1,
     );
 
-     has 'image_queue' => (
-        is         => 'ro',
-        required   => 1,
-        lazy       => 1,
-        default    => sub { die "image queue required" }
-     );
-   
+    has 'schema' => (
+        is => 'ro',
+        required => 1,
+        lazy_build => 1,
+    );
     
+    has 'dsn' => (
+        is => 'ro',
+        required => 1,
+    );
+
+    has 'user' => (
+        is => 'ro',
+        required => 1,
+    );
+
+    has 'password' => (
+        is => 'ro',
+        required => 1,
+    );
+
+    method _build_schema {
+        my $schema = Thumbit::Schema->connect( $self->dsn, $self->user, $self->password );
+        return $schema;
+    }
 
      method init_job {
+         use Data::Dumper;
          my @queue = $self->image_queue;
          warn "enqueueing step\n";
-
+         warn "queue: " . Dumper @queue;
          $self->enqueue_step(
              [
                  sub {
                      $self->make_thumbs;
                  },
-                 \@queue
              ]
          );
      }
 
-     method make_thumbs (ArrayRef $fh) {
-
+     method make_thumbs  {
+         use Data::Dumper;
          my $image = $self->imager;
-
+         my $schema = $self->schema;
+         my @image_paths = $schema->resultset('Queue')->all;
          my $scaled;
          warn "writing images\n";
          ## attempt to read in the image
-         for my $img_fh ( @{$fh} ) {
-             if ( $image->read( fh => $img_fh ) ) {
+         for my $img_path ( @image_paths ) {
+             warn "Image path: $img_path";
+             if ( $image->read( file => $img_path ) ) {
                  $scaled = $image->scale( scalefactor => $self->scalefactor );
                  
                  ## write our image to disk
                  binmode STDOUT;
                  $| = 1;
                  warn "Writing thumb out\n";
-                 $scaled->write( file => $self->writedir )
-                   or die $image->errstr;
+                 warn "Write dir: " . $self->writedir;
+                 $scaled->write( file => $img_path )
+                   or die $scaled->errstr;
+                 warn "Wrote ". $scaled;
              }
           }
 
